@@ -1,0 +1,8 @@
+{
+  "_note": "Assumptions to replace with the customer's own week 1 numbers. Sources in README.",
+  "manual_triage_minutes": 2.0,
+  "misroute_minutes": 10.0,
+  "triage_wage_per_hour": 29.74,
+  "model_price_per_m_input_tokens": 0.042,
+  "target_accuracy": 0.95
+}
