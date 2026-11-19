@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ticket routing threshold eval</title>
+<meta name="description" content="Shows, at each confidence threshold, how many support tickets route automatically, how accurate those routes are, and what 1,000 tickets cost.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#000;--mute:#555;--line:#d9d9d9;--soft:#f5f5f5;--bg:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:40px 16px 64px}
+a{color:var(--ink)}
+header .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 6px}
+h1{font-size:30px;line-height:1.2;margin:0 0 12px;letter-spacing:-.01em}
+.lede{font-size:16px;max-width:760px}
+.lede p{margin:0 0 10px}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 6px}
+.btn{display:inline-block;border:1.5px solid var(--ink);padding:7px 14px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px}
+.btn.primary{background:var(--ink);color:#fff}
+.note{font-size:13px;color:var(--mute);margin-top:10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:28px 0 8px}
+.tile{border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:var(--soft)}
+.tile .n{font-size:24px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--mute);margin-top:4px}
+section{margin-top:40px;border-top:1px solid var(--line);padding-top:20px}
+h2{font-size:20px;margin:0 0 12px}
+h3{font-size:16px;margin:22px 0 8px}
+h4{font-size:14px;margin:18px 0 6px}
+.tw{overflow-x:auto;margin:10px 0 16px;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--soft);padding:1px 4px;border-radius:3px}
+pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px}
+footer{margin-top:48px;font-size:12px;color:var(--mute);border-top:1px solid var(--line);padding-top:14px}
+</style></head>
+<body><main>
+<header>
+<p class="kicker">Demo · ticket-routing-eval</p>
+<h1>Ticket routing threshold eval</h1>
+<div class="lede"><p>A small harness for one decision: which product team should own an incoming support ticket, and how sure does the model have to be before it routes the ticket without a person looking at it.</p>
+<p>It takes a model's answers in the shape of a System One choice answer, as documented in OpenRouter's System One API reference (a choice, a confidence, and the probability of every option), then shows, at each confidence threshold, how many tickets would be routed automatically, how accurate those routes are, and what 1,000 tickets cost in triage time, misroutes, and model spend.</p></div>
+<div class="links"><a class="btn primary" href="https://github.com/pg2342-hub/ticket-routing-eval">View the code on GitHub</a><a class="btn" href="#run">Run it yourself</a></div>
+<p class="note">Data is 1,062 public PostHog GitHub issues standing in for support tickets, so the numbers show the method, not PostHog&#x27;s real routing accuracy. Everything on this page is the committed output of the code in the repository.</p>
+</header>
+<div class="tiles"><div class="tile"><div class="n">1,062</div><div class="l">public PostHog issues across 10 teams, split by date</div></div><div class="tile"><div class="n">0.70</div><div class="l">threshold picked on the validation slice: 93.1% on test, misses the 95% bar</div></div><div class="tile"><div class="n">0.85</div><div class="l">lowest threshold that clears 95% in hindsight (97.3%, 35% routed)</div></div><div class="tile"><div class="n">0.061</div><div class="l">expected calibration error of the baseline</div></div></div>
+<section><h2>What the baseline shows</h2><p>The baseline is a cheap bag-of-words classifier with isotonic calibration. It is a floor to beat, not a proposal.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Routed automatically</th>
+<th style="text-align: right;">Accuracy on those</th>
+<th style="text-align: right;">Cost per 1,000 tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">none (route everything)</td>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">74.9% (239 of 319)</td>
+<td style="text-align: right;">$1,243</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.70, picked on older issues</td>
+<td style="text-align: right;">54%</td>
+<td style="text-align: right;">93.1% (161 of 173)</td>
+<td style="text-align: right;">$640</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.85, best in hindsight</td>
+<td style="text-align: right;">35%</td>
+<td style="text-align: right;">97.3% (108 of 111)</td>
+<td style="text-align: right;">$693</td>
+</tr>
+<tr>
+<td style="text-align: right;">all by hand</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">n/a</td>
+<td style="text-align: right;">$991</td>
+</tr>
+</tbody>
+</table></div>
+<p>Three things come out of it.
+1. With these cost assumptions, routing everything is worse than routing nothing for a model that is right 75% of the time. Break-even for routing everything is about 80% accuracy, because a misroute costs five times a manual triage.
+2. The threshold picked on older issues (0.70) misses a 95% bar on newer ones (93.1%, bootstrap 95% range 89% to 97%), while 0.85 would have cleared it. The validation pick cleared 95% by one ticket (82 of 86), and overall accuracy fell from 85% on the validation slice to 75% on the test set as the team mix shifted, so part of the gap is noise and part is drift; both are why a pilot re-checks the threshold every week on the latest routes.
+3. Confidence has to mean something for any of this to work. The calibration table in the report checks that tickets the model is 90% sure of are right about 90% of the time; the baseline's expected calibration error is 0.061.</p>
+<p>Caveats. The test set is 319 issues, so every number has a wide range. 68 of the 108 correct routes at 0.85 are feature-flags issues, and the baseline is weaker outside that team. Isotonic calibration fitted on 743 issues is fragile (sigmoid calibration gives a very different curve), which is one more reason to prefer a model whose confidence is calibrated by design and to check it on the customer's own tickets.</p></section><section><h2>Accuracy versus share routed</h2><p><img alt="Threshold chart" src="threshold_chart.png" /></p></section><section><h2>Full report</h2><p>Train: 743 older tickets. Test: 319 tickets from 2026-07-01 to 2026-11-17, 10 teams.
+Routing every ticket by hand costs $991 per 1,000 tickets (2.0 min each at $29.74/hr).
+Model cost at $0.042 per million input tokens: $0.014 per 1,000 tickets.</p>
+<h3>Accuracy and cost by confidence threshold</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Routed automatically</th>
+<th style="text-align: right;">Accuracy on those</th>
+<th style="text-align: right;">Misroutes per 1,000</th>
+<th style="text-align: right;">Sent to a person per 1,000</th>
+<th style="text-align: right;">Cost per 1,000</th>
+<th style="text-align: right;">Saving vs all manual</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">74.9% (239 of 319)</td>
+<td style="text-align: right;">251</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$1,243</td>
+<td style="text-align: right;">$-252</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.30</td>
+<td style="text-align: right;">98%</td>
+<td style="text-align: right;">76.0% (237 of 312)</td>
+<td style="text-align: right;">235</td>
+<td style="text-align: right;">22</td>
+<td style="text-align: right;">$1,187</td>
+<td style="text-align: right;">$-196</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.40</td>
+<td style="text-align: right;">91%</td>
+<td style="text-align: right;">78.3% (227 of 290)</td>
+<td style="text-align: right;">197</td>
+<td style="text-align: right;">91</td>
+<td style="text-align: right;">$1,069</td>
+<td style="text-align: right;">$-78</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.50</td>
+<td style="text-align: right;">79%</td>
+<td style="text-align: right;">85.3% (214 of 251)</td>
+<td style="text-align: right;">116</td>
+<td style="text-align: right;">213</td>
+<td style="text-align: right;">$786</td>
+<td style="text-align: right;">$205</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.60</td>
+<td style="text-align: right;">66%</td>
+<td style="text-align: right;">91.0% (191 of 210)</td>
+<td style="text-align: right;">60</td>
+<td style="text-align: right;">342</td>
+<td style="text-align: right;">$634</td>
+<td style="text-align: right;">$357</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.70</td>
+<td style="text-align: right;">54%</td>
+<td style="text-align: right;">93.1% (161 of 173)</td>
+<td style="text-align: right;">38</td>
+<td style="text-align: right;">458</td>
+<td style="text-align: right;">$640</td>
+<td style="text-align: right;">$351</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.80</td>
+<td style="text-align: right;">42%</td>
+<td style="text-align: right;">94.0% (125 of 133)</td>
+<td style="text-align: right;">25</td>
+<td style="text-align: right;">583</td>
+<td style="text-align: right;">$702</td>
+<td style="text-align: right;">$289</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.85</td>
+<td style="text-align: right;">35%</td>
+<td style="text-align: right;">97.3% (108 of 111)</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">652</td>
+<td style="text-align: right;">$693</td>
+<td style="text-align: right;">$298</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.90</td>
+<td style="text-align: right;">24%</td>
+<td style="text-align: right;">98.7% (75 of 76)</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">762</td>
+<td style="text-align: right;">$771</td>
+<td style="text-align: right;">$221</td>
+</tr>
+<tr>
+<td style="text-align: right;">0.95</td>
+<td style="text-align: right;">5%</td>
+<td style="text-align: right;">100.0% (15 of 15)</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">953</td>
+<td style="text-align: right;">$945</td>
+<td style="text-align: right;">$47</td>
+</tr>
+</tbody>
+</table></div>
+<p>Each misroute is charged 10.0 minutes (the wrong team reads it, then it is moved and re-queued).</p>
+<p><strong>Threshold picked on the validation slice (149 older tickets): 0.70.</strong> On the test tickets it routes 54% automatically at 93.1% accuracy (161 of 173), which misses the 95% bar (bootstrap 95% range 89% to 97%), and saves $351 per 1,000 tickets.</p>
+<p>In hindsight, the lowest threshold that clears the bar on the test tickets is 0.85 (35% routed at 97.3%, 108 of 111). The validation pick cleared the bar by a small margin on few tickets, and the team mix also shifted between older and newer tickets, so a threshold chosen once is not enough evidence; a pilot re-checks it every week on a few hundred routes.</p>
+<h3>Does confidence track accuracy?</h3>
+<p>Expected calibration error: 0.061 (0 means confidence equals accuracy in every bucket).</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Confidence bucket</th>
+<th style="text-align: right;">Tickets</th>
+<th style="text-align: right;">Mean confidence</th>
+<th style="text-align: right;">Actual accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.00-0.50</td>
+<td style="text-align: right;">68</td>
+<td style="text-align: right;">0.40</td>
+<td style="text-align: right;">37%</td>
+</tr>
+<tr>
+<td>0.50-0.70</td>
+<td style="text-align: right;">78</td>
+<td style="text-align: right;">0.60</td>
+<td style="text-align: right;">68%</td>
+</tr>
+<tr>
+<td>0.70-0.80</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: right;">0.76</td>
+<td style="text-align: right;">90%</td>
+</tr>
+<tr>
+<td>0.80-0.90</td>
+<td style="text-align: right;">57</td>
+<td style="text-align: right;">0.85</td>
+<td style="text-align: right;">88%</td>
+</tr>
+<tr>
+<td>0.90-0.95</td>
+<td style="text-align: right;">61</td>
+<td style="text-align: right;">0.93</td>
+<td style="text-align: right;">98%</td>
+</tr>
+<tr>
+<td>0.95-1.00</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">0.96</td>
+<td style="text-align: right;">100%</td>
+</tr>
+</tbody>
+</table></div>
+<h3>By month (drift check)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Month</th>
+<th style="text-align: right;">Tickets</th>
+<th style="text-align: right;">Accuracy, all</th>
+<th style="text-align: right;">Routed automatically</th>
+<th style="text-align: right;">Accuracy, routed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-07</td>
+<td style="text-align: right;">33</td>
+<td style="text-align: right;">70%</td>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">100%</td>
+</tr>
+<tr>
+<td>2026-08</td>
+<td style="text-align: right;">96</td>
+<td style="text-align: right;">81%</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: right;">98%</td>
+</tr>
+<tr>
+<td>2026-09</td>
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">74%</td>
+<td style="text-align: right;">49</td>
+<td style="text-align: right;">84%</td>
+</tr>
+<tr>
+<td>2026-10</td>
+<td style="text-align: right;">74</td>
+<td style="text-align: right;">72%</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">96%</td>
+</tr>
+<tr>
+<td>2026-11</td>
+<td style="text-align: right;">36</td>
+<td style="text-align: right;">72%</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">95%</td>
+</tr>
+</tbody>
+</table></div></section><section><h2>Data</h2><p>1,062 public GitHub issues from PostHog's main repository that carry exactly one <code>team/*</code> label, across 10 teams (product analytics, feature flags, experiments, data warehouse, web analytics, LLM analytics, session replay, error tracking, conversations, CDP). Each issue stands in for a support ticket, and its team label is the ground-truth owner. Title prefixes that name the product outright ("Feature flags: ...") are removed, along with links and images. GitHub search returns at most the 200 newest issues per team label, so large teams are capped and the team mix shifts between older and newer issues; treat the mix as a sample, not PostHog's real ticket volume.</p>
+<p>The split is by date. The oldest 70% (743 issues, through June 2026) train the baseline, and the newest 30% (319 issues, July 1 to November 17, 2026) are the test set, so the test looks like next month's queue, including teams that grew after the training data was collected. The confidence threshold is picked on a validation slice (the newest 149 training issues) and only then applied to the test set, the way a pilot has to pick it before next month's tickets arrive.</p>
+<p>These are GitHub issues, not PostHog's private support tickets, so the numbers show the method rather than PostHog's real routing accuracy. A pilot reruns the same script on the customer's own closed tickets.</p></section><section><h2>Cost assumptions</h2><div class="tw"><table>
+<thead>
+<tr>
+<th>Input</th>
+<th style="text-align: right;">Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Manual triage per ticket</td>
+<td style="text-align: right;">2 minutes</td>
+<td>Assumption; timed on the customer's own queue in week 1 of a pilot</td>
+</tr>
+<tr>
+<td>Cost of one misroute</td>
+<td style="text-align: right;">10 minutes</td>
+<td>Assumption (wrong team reads it, moves it, re-queues it); measured from transfer logs in week 1</td>
+</tr>
+<tr>
+<td>Triage wage</td>
+<td style="text-align: right;">$29.74/hr</td>
+<td>BLS 2025 median for Computer User Support Specialists (O*NET 15-1232.00). Conservative for engineer-led support</td>
+</tr>
+<tr>
+<td>Model input price</td>
+<td style="text-align: right;">$0.042 per million tokens</td>
+<td>TypeSafe's published Jev input price; output not metered</td>
+</tr>
+<tr>
+<td>Accuracy bar</td>
+<td style="text-align: right;">95%</td>
+<td>Assumption; set with the support lead at kickoff</td>
+</tr>
+</tbody>
+</table></div></section>
+<section id="run"><h2>Run it yourself</h2><pre><code>pip install scikit-learn numpy matplotlib
+python fetch_tickets.py        # optional: re-pull issues with the GitHub CLI
+python run_eval.py             # baseline router -&gt; reports/report.md, results.json, threshold_chart.png
+python export_test_set.py      # validation and test tickets as System One request bodies
+python run_eval.py --val-answers val_answers.jsonl --answers test_answers.jsonl --out reports_jev
+python run_eval.py --confidence top   # threshold on the top probability instead of the confidence field
+</code></pre>
+<p>An answers file has one line per ticket:
+<code>{"id": 41234, "answer": {"type": "choice", "choice": "feature-flags", "confidence": 0.75, "probabilities": {"feature-flags": 0.84, ...}}}</code>
+Jev's <code>confidence</code> is reported separately from its top probability, so the harness thresholds on <code>confidence</code> by default and can sweep the top probability too. A <code>{"type": "refusal"}</code> answer, or an answer with neither a confidence nor probabilities, is always sent to a person.</p><p>Code: <a href="https://github.com/pg2342-hub/ticket-routing-eval">https://github.com/pg2342-hub/ticket-routing-eval</a></p></section>
+<footer>Source and full README at <a href="https://github.com/pg2342-hub/ticket-routing-eval">https://github.com/pg2342-hub/ticket-routing-eval</a>.</footer>
+</main></body></html>

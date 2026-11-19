@@ -1,5 +1,7 @@
 # Ticket routing threshold eval
 
+**Demo page (sample output and eval results, no install):** https://pg2342-hub.github.io/ticket-routing-eval/
+
 A small harness for one decision: which product team should own an incoming support ticket, and how sure does the model have to be before it routes the ticket without a person looking at it.
 
 It takes a model's answers in the shape of a System One choice answer, as documented in OpenRouter's System One API reference (a choice, a confidence, and the probability of every option), then shows, at each confidence threshold, how many tickets would be routed automatically, how accurate those routes are, and what 1,000 tickets cost in triage time, misroutes, and model spend.
