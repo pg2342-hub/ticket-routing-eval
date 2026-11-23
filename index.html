@@ -24,6 +24,7 @@ section{margin-top:24px}
 h3{margin-top:32px}
 .tw{overflow-x:auto;margin:12px 0 20px}
 tr:last-child td{border-bottom:1px solid var(--rule)}
+img[src$=".svg"]{background:none!important;box-shadow:none!important;border-radius:0!important}
 img{display:block;max-width:100%;height:auto;background:#fff;border-radius:12px;
 box-shadow:0 1px 0 rgb(27 26 23/.06),0 30px 60px -30px rgb(27 26 23/.45);margin:16px 0}
 main>footer{margin-top:56px;font-size:14px;color:var(--ink-2)}
@@ -81,7 +82,7 @@ main>footer{margin-top:56px;font-size:14px;color:var(--ink-2)}
 1. With these cost assumptions, routing everything is worse than routing nothing for a model that is right 75% of the time. Break-even for routing everything is about 80% accuracy, because a misroute costs five times a manual triage.
 2. The threshold picked on older issues (0.70) misses a 95% bar on newer ones (93.1%, bootstrap 95% range 89% to 97%), while 0.85 would have cleared it. The validation pick cleared 95% by one ticket (82 of 86), and overall accuracy fell from 85% on the validation slice to 75% on the test set as the team mix shifted, so part of the gap is noise and part is drift; both are why a pilot re-checks the threshold every week on the latest routes.
 3. Confidence has to mean something for any of this to work. The calibration table in the report checks that tickets the model is 90% sure of are right about 90% of the time; the baseline's expected calibration error is 0.061.</p>
-<p>Caveats. The test set is 319 issues, so every number has a wide range. 68 of the 108 correct routes at 0.85 are feature-flags issues, and the baseline is weaker outside that team. Isotonic calibration fitted on 743 issues is fragile (sigmoid calibration gives a very different curve), which is one more reason to prefer a model whose confidence is calibrated by design and to check it on the customer's own tickets.</p></section><section><h2>Accuracy versus share routed</h2><p><img alt="Threshold chart" src="threshold_chart.png" /></p></section><section><h2>Full report</h2><p>Train: 743 older tickets. Test: 319 tickets from 2026-07-01 to 2026-11-17, 10 teams.
+<p>Caveats. The test set is 319 issues, so every number has a wide range. 68 of the 108 correct routes at 0.85 are feature-flags issues, and the baseline is weaker outside that team. Isotonic calibration fitted on 743 issues is fragile (sigmoid calibration gives a very different curve), which is one more reason to prefer a model whose confidence is calibrated by design and to check it on the customer's own tickets.</p></section><section><h2>Accuracy versus share routed</h2><p><img alt="Threshold chart: as the confidence threshold rises, the share routed automatically falls, accuracy rises, and the cost per 1,000 tickets dips then climbs." src="threshold_chart.svg" width="720" height="400" /></p></section><section><h2>Full report</h2><p>Train: 743 older tickets. Test: 319 tickets from 2026-07-01 to 2026-11-17, 10 teams.
 Routing every ticket by hand costs $991 per 1,000 tickets (2.0 min each at $29.74/hr).
 Model cost at $0.042 per million input tokens: $0.014 per 1,000 tickets.</p>
 <h3>Accuracy and cost by confidence threshold</h3>
