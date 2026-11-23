@@ -1,44 +1,36 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en"><head>
+<!-- demo-chrome --><meta name="theme-color" content="#f4f2ec"><link rel="icon" href="https://pranavgudise.dev/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="https://pranavgudise.dev/kit/demo.css"><!-- /demo-chrome -->
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ticket routing threshold eval</title>
 <meta name="description" content="Shows, at each confidence threshold, how many support tickets route automatically, how accurate those routes are, and what 1,000 tickets cost.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#000;--mute:#555;--line:#d9d9d9;--soft:#f5f5f5;--bg:#fff}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-main{max-width:980px;margin:0 auto;padding:40px 16px 64px}
-a{color:var(--ink)}
-header .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 6px}
-h1{font-size:30px;line-height:1.2;margin:0 0 12px;letter-spacing:-.01em}
-.lede{font-size:16px;max-width:760px}
-.lede p{margin:0 0 10px}
-.links{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 6px}
-.btn{display:inline-block;border:1.5px solid var(--ink);padding:7px 14px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px}
-.btn.primary{background:var(--ink);color:#fff}
-.note{font-size:13px;color:var(--mute);margin-top:10px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:28px 0 8px}
-.tile{border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:var(--soft)}
-.tile .n{font-size:24px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
-.tile .l{font-size:13px;color:var(--mute);margin-top:4px}
-section{margin-top:40px;border-top:1px solid var(--line);padding-top:20px}
-h2{font-size:20px;margin:0 0 12px}
-h3{font-size:16px;margin:22px 0 8px}
-h4{font-size:14px;margin:18px 0 6px}
-.tw{overflow-x:auto;margin:10px 0 16px;border:1px solid var(--line);border-radius:6px}
-table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
-th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{background:var(--soft);font-weight:600;white-space:nowrap}
-tr:last-child td{border-bottom:0}
-code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--soft);padding:1px 4px;border-radius:3px}
-pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto}
-pre code{background:none;padding:0}
-img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px}
-footer{margin-top:48px;font-size:12px;color:var(--mute);border-top:1px solid var(--line);padding-top:14px}
+main{padding-bottom:24px}
+header .kicker{font:400 13px/1.4 var(--mono);letter-spacing:.02em;color:var(--ink-2);margin:56px 0 0}
+header .kicker+h1{margin-top:12px}
+.lede{font-size:18px;color:var(--ink-2);max-width:42em}.lede p{margin:0 0 12px}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 8px}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border:1px solid var(--rule);border-radius:999px;
+color:var(--ink);text-decoration:none;font:500 15px/1 var(--sans);transition:border-color .2s,background-color .2s}
+.btn:hover{border-color:var(--ink);color:var(--ink)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}.btn.primary:hover{background:var(--green-deep);color:#fff}
+.note{font-size:15px;color:var(--ink-2);margin-top:12px;max-width:46em}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:40px 0 8px}
+.tile{border:1px solid var(--rule);border-radius:16px;padding:18px 20px}
+.tile .n{font:400 36px/1.1 var(--serif);font-variant-numeric:tabular-nums}
+.tile .l{font-size:14px;color:var(--ink-2);margin-top:6px}
+section{margin-top:24px}
+h3{margin-top:32px}
+.tw{overflow-x:auto;margin:12px 0 20px}
+tr:last-child td{border-bottom:1px solid var(--rule)}
+img{display:block;max-width:100%;height:auto;background:#fff;border-radius:12px;
+box-shadow:0 1px 0 rgb(27 26 23/.06),0 30px 60px -30px rgb(27 26 23/.45);margin:16px 0}
+main>footer{margin-top:56px;font-size:14px;color:var(--ink-2)}
 </style></head>
-<body><main>
+<body>
+<!-- demo-chrome --><header class="demo-top"><a class="demo-brand" href="https://pranavgudise.dev/"><svg class="demo-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><g class="n"><path class="f" d="M15.5 8.5 L 13.4 13.4 L 8.5 15.5 L 10.6 10.6 Z"/></g><circle class="p" cx="12" cy="12" r=".7"/></svg><span>Pranav Gudise</span></a><a class="pill" href="https://github.com/pg2342-hub/ticket-routing-eval">Code on GitHub</a></header><!-- /demo-chrome -->
+<main>
 <header>
 <p class="kicker">Demo · ticket-routing-eval</p>
 <h1>Ticket routing threshold eval</h1>
@@ -348,4 +340,5 @@ python run_eval.py --confidence top   # threshold on the top probability instead
 <code>{"id": 41234, "answer": {"type": "choice", "choice": "feature-flags", "confidence": 0.75, "probabilities": {"feature-flags": 0.84, ...}}}</code>
 Jev's <code>confidence</code> is reported separately from its top probability, so the harness thresholds on <code>confidence</code> by default and can sweep the top probability too. A <code>{"type": "refusal"}</code> answer, or an answer with neither a confidence nor probabilities, is always sent to a person.</p><p>Code: <a href="https://github.com/pg2342-hub/ticket-routing-eval">https://github.com/pg2342-hub/ticket-routing-eval</a></p></section>
 <footer>Source and full README at <a href="https://github.com/pg2342-hub/ticket-routing-eval">https://github.com/pg2342-hub/ticket-routing-eval</a>.</footer>
-</main></body></html>
+</main><!-- demo-chrome --><footer class="demo-foot"><span>A working build by <a href="https://pranavgudise.dev/">Pranav Gudise</a>. Synthetic or public data only.</span><a href="https://github.com/pg2342-hub/ticket-routing-eval">github.com/pg2342-hub/ticket-routing-eval</a></footer><!-- /demo-chrome -->
+</body></html>
