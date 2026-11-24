@@ -3,343 +3,307 @@
 <!-- demo-chrome --><meta name="theme-color" content="#f4f2ec"><link rel="icon" href="https://pranavgudise.dev/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="https://pranavgudise.dev/kit/demo.css"><!-- /demo-chrome -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ticket routing threshold eval</title>
-<meta name="description" content="Shows, at each confidence threshold, how many support tickets route automatically, how accurate those routes are, and what 1,000 tickets cost.">
+<title>Ticket Routing Threshold Eval</title>
+<meta name="description" content="At each confidence threshold: how many support tickets route automatically, how accurate those routes are, and what 1,000 tickets cost. The 0.70 threshold picked on older tickets misses a 95% bar on newer ones; 0.85 clears it.">
 <style>
-main{padding-bottom:24px}
-header .kicker{font:400 13px/1.4 var(--mono);letter-spacing:.02em;color:var(--ink-2);margin:56px 0 0}
-header .kicker+h1{margin-top:12px}
-.lede{font-size:18px;color:var(--ink-2);max-width:42em}.lede p{margin:0 0 12px}
-.links{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 8px}
-.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border:1px solid var(--rule);border-radius:999px;
-color:var(--ink);text-decoration:none;font:500 15px/1 var(--sans);transition:border-color .2s,background-color .2s}
-.btn:hover{border-color:var(--ink);color:var(--ink)}
-.btn.primary{background:var(--green);border-color:var(--green);color:#fff}.btn.primary:hover{background:var(--green-deep);color:#fff}
-.note{font-size:15px;color:var(--ink-2);margin-top:12px;max-width:46em}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:40px 0 8px}
-.tile{border:1px solid var(--rule);border-radius:16px;padding:18px 20px}
-.tile .n{font:400 36px/1.1 var(--serif);font-variant-numeric:tabular-nums}
-.tile .l{font-size:14px;color:var(--ink-2);margin-top:6px}
-section{margin-top:24px}
-h3{margin-top:32px}
-.tw{overflow-x:auto;margin:12px 0 20px}
-tr:last-child td{border-bottom:1px solid var(--rule)}
-img[src$=".svg"]{background:none!important;box-shadow:none!important;border-radius:0!important}
-img{display:block;max-width:100%;height:auto;background:#fff;border-radius:12px;
-box-shadow:0 1px 0 rgb(27 26 23/.06),0 30px 60px -30px rgb(27 26 23/.45);margin:16px 0}
-main>footer{margin-top:56px;font-size:14px;color:var(--ink-2)}
+.head h1{margin:40px 0 14px}
+.head .lead{max-width:42em}
+/* verdict: the same test tickets, one row per way of routing them */
+.verdict,.curve{margin:36px 0 0;border:1px solid var(--rule);border-radius:16px;background:#fbfaf6;overflow:hidden}
+.vhead,.chead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;padding:18px 24px;border-bottom:1px solid var(--rule)}
+.vhead h2,.chead h2{all:unset;font:400 22px/1.2 var(--serif)}
+.vhead p{margin:0;color:var(--ink-2);font-size:15px}
+.vhead p b{color:var(--ink)}
+.vrow{display:grid;grid-template-columns:minmax(0,15em) minmax(0,22em) 7.5em 5.5em 7.5em;align-items:center;gap:20px;padding:18px 24px;border-radius:0;transition:background-color .2s}
+.vrow+.vrow{border-top:1px solid var(--rule-soft)}
+.vrow[data-t]{cursor:pointer}
+.vrow[data-t]:hover,.vrow.on{background:rgb(36 81 60/.06)}
+.vwho b{display:block;font:400 20px/1.2 var(--serif)}
+.vwho span{display:block;color:var(--ink-2);font-size:14px;line-height:1.4;margin-top:4px}
+.strip{display:grid;grid-template-rows:repeat(4,auto);grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px}
+.cell{display:block;aspect-ratio:1;border-radius:2px;border:1.25px solid transparent}
+.cell.pass{background:var(--green)}
+.cell.fail{background:var(--paper);border-color:rgb(27 26 23/.55)}
+.cell.crit{background:var(--ink)}
+.vscore b,.vcost b{font:400 34px/1 var(--serif);font-variant-numeric:tabular-nums}
+.vscore b small{font-size:18px}
+.vcost b{font-size:24px}
+.vscore span,.vcost span{display:block;color:var(--ink-2);font-size:13px;line-height:1.35;margin-top:4px}
+.gate{justify-self:end;display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 14px;border-radius:999px;font:500 12.5px/1 var(--mono);letter-spacing:.06em;white-space:nowrap}
+.gate.go{background:var(--green-wash);color:var(--green)}
+.gate.nogo{background:var(--ink);color:var(--paper)}
+.gate.base{border:1px solid var(--rule);color:var(--ink-2)}
+.legend,.clegend{display:flex;flex-wrap:wrap;gap:6px 20px;padding:14px 24px;border-top:1px solid var(--rule);color:var(--ink-2);font-size:13px}
+.legend span,.clegend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:12px;height:12px;border-radius:3px;border:1.5px solid transparent}
+.legend .pass{background:var(--green)}.legend .fail{border-color:rgb(27 26 23/.55)}.legend .crit{background:var(--ink)}
+.clegend .ln{width:22px;height:0;border-top:2px solid var(--ink)}
+.clegend .ln.green{border-color:var(--green)}
+.clegend .ln.dash{border-top:2px dashed var(--ink-2)}
+/* threshold curve */
+.chead .seg{margin:0}
+.cbody{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:0}
+.chart{padding:16px 8px 8px 8px;min-width:0}
+.chart svg{display:block;width:100%;height:auto;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.chart .hit{cursor:pointer}
+.readout{border-left:1px solid var(--rule);padding:20px 22px;display:grid;gap:16px;align-content:start}
+.rtop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rthr{font:400 22px/1.2 var(--serif);white-space:nowrap}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.rgrid b{display:block;font:400 34px/1 var(--serif);font-variant-numeric:tabular-nums}
+.rgrid span{display:block;color:var(--ink-2);font-size:13px;line-height:1.35;margin-top:4px}
+.readout .strip{grid-template-rows:repeat(5,auto)}
+.rnote{margin:0;color:var(--ink-2);font-size:14px;line-height:1.5}
+/* page body: content and a side column */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:56px;align-items:start;margin-top:8px}
+.side{position:sticky;top:24px;margin-top:64px;display:grid;gap:22px;font-size:14px;color:var(--ink-2)}
+.side h3{margin:0 0 6px;font:500 13px/1.3 var(--sans);color:var(--ink)}
+.side p{margin:0}
+.side nav a{display:block;padding:5px 0;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--rule-soft)}
+.side nav a:hover{color:var(--ink)}
+.side pre{font-size:12px;margin:6px 0 0}
+.seg{display:flex;width:fit-content;max-width:100%;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid var(--rule);border-radius:999px;margin:0 0 16px;background:#fbfaf6}
+.seg button{min-height:34px;padding:0 11px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font:500 13px/1 var(--mono);cursor:pointer;font-variant-numeric:tabular-nums}
+.seg button[aria-checked=true]{background:var(--ink);color:var(--paper)}
+.note{color:var(--ink-2);font-size:15px;max-width:44em;margin-top:14px}
+h2+.note{margin-top:0}
+.note b{color:var(--ink)}
+.prose{max-width:44em}
+.finds{max-width:44em;padding-left:22px;margin:16px 0 0}
+.finds li{margin:0 0 12px}
+.caveat{border:1px solid var(--rule);border-radius:16px;padding:18px 22px;margin-top:20px;max-width:44em;background:#fbfaf6}
+.caveat h3{margin:0 0 6px;font:400 20px/1.2 var(--serif)}
+.caveat p{margin:0;font-size:15px;color:var(--ink-2)}
+#sweepTable tbody tr{cursor:pointer}
+#sweepTable th{white-space:normal}
+#sweepTable tr.on td{background:var(--green-wash)}
+@media (max-width:1000px){
+ .layout{grid-template-columns:minmax(0,1fr);gap:0}
+ .side{position:static;margin-top:48px;order:2}
+ .vrow{grid-template-columns:minmax(0,1fr) auto auto;gap:12px 20px}
+ .vwho{grid-column:1/-1}
+ .vrow .strip{grid-column:1/-1;grid-row:2}
+ .vscore{grid-row:3}.vcost{grid-row:3}.vrow .gate{grid-row:3;grid-column:3}
+ .cbody{grid-template-columns:1fr}
+ .readout{border-left:0;border-top:1px solid var(--rule)}
+}
+@media (max-width:640px){.vrow{padding:16px 18px}.vhead,.chead,.legend,.clegend,.readout{padding-left:18px;padding-right:18px}.strip{gap:2px}.rgrid b,.vscore b{font-size:30px}}
+@media (prefers-reduced-motion:reduce){.vrow{transition:none}}
 </style></head>
 <body>
 <!-- demo-chrome --><header class="demo-top"><a class="demo-brand" href="https://pranavgudise.dev/"><svg class="demo-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><g class="n"><path class="f" d="M15.5 8.5 L 13.4 13.4 L 8.5 15.5 L 10.6 10.6 Z"/></g><circle class="p" cx="12" cy="12" r=".7"/></svg><span>Pranav Gudise</span></a><a class="pill" href="https://github.com/pg2342-hub/ticket-routing-eval">Code on GitHub</a></header><!-- /demo-chrome -->
 <main>
-<header>
-<p class="kicker">Demo · ticket-routing-eval</p>
-<h1>Ticket routing threshold eval</h1>
-<div class="lede"><p>A small harness for one decision: which product team should own an incoming support ticket, and how sure does the model have to be before it routes the ticket without a person looking at it.</p>
-<p>It takes a model's answers in the shape of a System One choice answer, as documented in OpenRouter's System One API reference (a choice, a confidence, and the probability of every option), then shows, at each confidence threshold, how many tickets would be routed automatically, how accurate those routes are, and what 1,000 tickets cost in triage time, misroutes, and model spend.</p></div>
-<div class="links"><a class="btn primary" href="https://github.com/pg2342-hub/ticket-routing-eval">View the code on GitHub</a><a class="btn" href="#run">Run it yourself</a></div>
-<p class="note">Data is 1,062 public PostHog GitHub issues standing in for support tickets, so the numbers show the method, not PostHog&#x27;s real routing accuracy. Everything on this page is the committed output of the code in the repository.</p>
-</header>
-<div class="tiles"><div class="tile"><div class="n">1,062</div><div class="l">public PostHog issues across 10 teams, split by date</div></div><div class="tile"><div class="n">0.70</div><div class="l">threshold picked on the validation slice: 93.1% on test, misses the 95% bar</div></div><div class="tile"><div class="n">0.85</div><div class="l">lowest threshold that clears 95% in hindsight (97.3%, 35% routed)</div></div><div class="tile"><div class="n">0.061</div><div class="l">expected calibration error of the baseline</div></div></div>
-<section><h2>What the baseline shows</h2><p>The baseline is a cheap bag-of-words classifier with isotonic calibration. It is a floor to beat, not a proposal.</p>
-<div class="tw"><table>
-<thead>
-<tr>
-<th style="text-align: right;">Threshold</th>
-<th style="text-align: right;">Routed automatically</th>
-<th style="text-align: right;">Accuracy on those</th>
-<th style="text-align: right;">Cost per 1,000 tickets</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: right;">none (route everything)</td>
-<td style="text-align: right;">100%</td>
-<td style="text-align: right;">74.9% (239 of 319)</td>
-<td style="text-align: right;">$1,243</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.70, picked on older issues</td>
-<td style="text-align: right;">54%</td>
-<td style="text-align: right;">93.1% (161 of 173)</td>
-<td style="text-align: right;">$640</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.85, best in hindsight</td>
-<td style="text-align: right;">35%</td>
-<td style="text-align: right;">97.3% (108 of 111)</td>
-<td style="text-align: right;">$693</td>
-</tr>
-<tr>
-<td style="text-align: right;">all by hand</td>
-<td style="text-align: right;">0%</td>
-<td style="text-align: right;">n/a</td>
-<td style="text-align: right;">$991</td>
-</tr>
-</tbody>
-</table></div>
-<p>Three things come out of it.
-1. With these cost assumptions, routing everything is worse than routing nothing for a model that is right 75% of the time. Break-even for routing everything is about 80% accuracy, because a misroute costs five times a manual triage.
-2. The threshold picked on older issues (0.70) misses a 95% bar on newer ones (93.1%, bootstrap 95% range 89% to 97%), while 0.85 would have cleared it. The validation pick cleared 95% by one ticket (82 of 86), and overall accuracy fell from 85% on the validation slice to 75% on the test set as the team mix shifted, so part of the gap is noise and part is drift; both are why a pilot re-checks the threshold every week on the latest routes.
-3. Confidence has to mean something for any of this to work. The calibration table in the report checks that tickets the model is 90% sure of are right about 90% of the time; the baseline's expected calibration error is 0.061.</p>
-<p>Caveats. The test set is 319 issues, so every number has a wide range. 68 of the 108 correct routes at 0.85 are feature-flags issues, and the baseline is weaker outside that team. Isotonic calibration fitted on 743 issues is fragile (sigmoid calibration gives a very different curve), which is one more reason to prefer a model whose confidence is calibrated by design and to check it on the customer's own tickets.</p></section><section><h2>Accuracy versus share routed</h2><p><img alt="Threshold chart: as the confidence threshold rises, the share routed automatically falls, accuracy rises, and the cost per 1,000 tickets dips then climbs." src="threshold_chart.svg" width="720" height="400" /></p></section><section><h2>Full report</h2><p>Train: 743 older tickets. Test: 319 tickets from 2026-07-01 to 2026-11-17, 10 teams.
-Routing every ticket by hand costs $991 per 1,000 tickets (2.0 min each at $29.74/hr).
-Model cost at $0.042 per million input tokens: $0.014 per 1,000 tickets.</p>
-<h3>Accuracy and cost by confidence threshold</h3>
-<div class="tw"><table>
-<thead>
-<tr>
-<th style="text-align: right;">Threshold</th>
-<th style="text-align: right;">Routed automatically</th>
-<th style="text-align: right;">Accuracy on those</th>
-<th style="text-align: right;">Misroutes per 1,000</th>
-<th style="text-align: right;">Sent to a person per 1,000</th>
-<th style="text-align: right;">Cost per 1,000</th>
-<th style="text-align: right;">Saving vs all manual</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: right;">0.00</td>
-<td style="text-align: right;">100%</td>
-<td style="text-align: right;">74.9% (239 of 319)</td>
-<td style="text-align: right;">251</td>
-<td style="text-align: right;">0</td>
-<td style="text-align: right;">$1,243</td>
-<td style="text-align: right;">$-252</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.30</td>
-<td style="text-align: right;">98%</td>
-<td style="text-align: right;">76.0% (237 of 312)</td>
-<td style="text-align: right;">235</td>
-<td style="text-align: right;">22</td>
-<td style="text-align: right;">$1,187</td>
-<td style="text-align: right;">$-196</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.40</td>
-<td style="text-align: right;">91%</td>
-<td style="text-align: right;">78.3% (227 of 290)</td>
-<td style="text-align: right;">197</td>
-<td style="text-align: right;">91</td>
-<td style="text-align: right;">$1,069</td>
-<td style="text-align: right;">$-78</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.50</td>
-<td style="text-align: right;">79%</td>
-<td style="text-align: right;">85.3% (214 of 251)</td>
-<td style="text-align: right;">116</td>
-<td style="text-align: right;">213</td>
-<td style="text-align: right;">$786</td>
-<td style="text-align: right;">$205</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.60</td>
-<td style="text-align: right;">66%</td>
-<td style="text-align: right;">91.0% (191 of 210)</td>
-<td style="text-align: right;">60</td>
-<td style="text-align: right;">342</td>
-<td style="text-align: right;">$634</td>
-<td style="text-align: right;">$357</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.70</td>
-<td style="text-align: right;">54%</td>
-<td style="text-align: right;">93.1% (161 of 173)</td>
-<td style="text-align: right;">38</td>
-<td style="text-align: right;">458</td>
-<td style="text-align: right;">$640</td>
-<td style="text-align: right;">$351</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.80</td>
-<td style="text-align: right;">42%</td>
-<td style="text-align: right;">94.0% (125 of 133)</td>
-<td style="text-align: right;">25</td>
-<td style="text-align: right;">583</td>
-<td style="text-align: right;">$702</td>
-<td style="text-align: right;">$289</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.85</td>
-<td style="text-align: right;">35%</td>
-<td style="text-align: right;">97.3% (108 of 111)</td>
-<td style="text-align: right;">9</td>
-<td style="text-align: right;">652</td>
-<td style="text-align: right;">$693</td>
-<td style="text-align: right;">$298</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.90</td>
-<td style="text-align: right;">24%</td>
-<td style="text-align: right;">98.7% (75 of 76)</td>
-<td style="text-align: right;">3</td>
-<td style="text-align: right;">762</td>
-<td style="text-align: right;">$771</td>
-<td style="text-align: right;">$221</td>
-</tr>
-<tr>
-<td style="text-align: right;">0.95</td>
-<td style="text-align: right;">5%</td>
-<td style="text-align: right;">100.0% (15 of 15)</td>
-<td style="text-align: right;">0</td>
-<td style="text-align: right;">953</td>
-<td style="text-align: right;">$945</td>
-<td style="text-align: right;">$47</td>
-</tr>
-</tbody>
-</table></div>
-<p>Each misroute is charged 10.0 minutes (the wrong team reads it, then it is moved and re-queued).</p>
-<p><strong>Threshold picked on the validation slice (149 older tickets): 0.70.</strong> On the test tickets it routes 54% automatically at 93.1% accuracy (161 of 173), which misses the 95% bar (bootstrap 95% range 89% to 97%), and saves $351 per 1,000 tickets.</p>
-<p>In hindsight, the lowest threshold that clears the bar on the test tickets is 0.85 (35% routed at 97.3%, 108 of 111). The validation pick cleared the bar by a small margin on few tickets, and the team mix also shifted between older and newer tickets, so a threshold chosen once is not enough evidence; a pilot re-checks it every week on a few hundred routes.</p>
-<h3>Does confidence track accuracy?</h3>
-<p>Expected calibration error: 0.061 (0 means confidence equals accuracy in every bucket).</p>
-<div class="tw"><table>
-<thead>
-<tr>
-<th>Confidence bucket</th>
-<th style="text-align: right;">Tickets</th>
-<th style="text-align: right;">Mean confidence</th>
-<th style="text-align: right;">Actual accuracy</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0.00-0.50</td>
-<td style="text-align: right;">68</td>
-<td style="text-align: right;">0.40</td>
-<td style="text-align: right;">37%</td>
-</tr>
-<tr>
-<td>0.50-0.70</td>
-<td style="text-align: right;">78</td>
-<td style="text-align: right;">0.60</td>
-<td style="text-align: right;">68%</td>
-</tr>
-<tr>
-<td>0.70-0.80</td>
-<td style="text-align: right;">40</td>
-<td style="text-align: right;">0.76</td>
-<td style="text-align: right;">90%</td>
-</tr>
-<tr>
-<td>0.80-0.90</td>
-<td style="text-align: right;">57</td>
-<td style="text-align: right;">0.85</td>
-<td style="text-align: right;">88%</td>
-</tr>
-<tr>
-<td>0.90-0.95</td>
-<td style="text-align: right;">61</td>
-<td style="text-align: right;">0.93</td>
-<td style="text-align: right;">98%</td>
-</tr>
-<tr>
-<td>0.95-1.00</td>
-<td style="text-align: right;">15</td>
-<td style="text-align: right;">0.96</td>
-<td style="text-align: right;">100%</td>
-</tr>
-</tbody>
-</table></div>
-<h3>By month (drift check)</h3>
-<div class="tw"><table>
-<thead>
-<tr>
-<th>Month</th>
-<th style="text-align: right;">Tickets</th>
-<th style="text-align: right;">Accuracy, all</th>
-<th style="text-align: right;">Routed automatically</th>
-<th style="text-align: right;">Accuracy, routed</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>2026-07</td>
-<td style="text-align: right;">33</td>
-<td style="text-align: right;">70%</td>
-<td style="text-align: right;">19</td>
-<td style="text-align: right;">100%</td>
-</tr>
-<tr>
-<td>2026-08</td>
-<td style="text-align: right;">96</td>
-<td style="text-align: right;">81%</td>
-<td style="text-align: right;">40</td>
-<td style="text-align: right;">98%</td>
-</tr>
-<tr>
-<td>2026-09</td>
-<td style="text-align: right;">80</td>
-<td style="text-align: right;">74%</td>
-<td style="text-align: right;">49</td>
-<td style="text-align: right;">84%</td>
-</tr>
-<tr>
-<td>2026-10</td>
-<td style="text-align: right;">74</td>
-<td style="text-align: right;">72%</td>
-<td style="text-align: right;">45</td>
-<td style="text-align: right;">96%</td>
-</tr>
-<tr>
-<td>2026-11</td>
-<td style="text-align: right;">36</td>
-<td style="text-align: right;">72%</td>
-<td style="text-align: right;">20</td>
-<td style="text-align: right;">95%</td>
-</tr>
-</tbody>
-</table></div></section><section><h2>Data</h2><p>1,062 public GitHub issues from PostHog's main repository that carry exactly one <code>team/*</code> label, across 10 teams (product analytics, feature flags, experiments, data warehouse, web analytics, LLM analytics, session replay, error tracking, conversations, CDP). Each issue stands in for a support ticket, and its team label is the ground-truth owner. Title prefixes that name the product outright ("Feature flags: ...") are removed, along with links and images. GitHub search returns at most the 200 newest issues per team label, so large teams are capped and the team mix shifts between older and newer issues; treat the mix as a sample, not PostHog's real ticket volume.</p>
-<p>The split is by date. The oldest 70% (743 issues, through June 2026) train the baseline, and the newest 30% (319 issues, July 1 to November 17, 2026) are the test set, so the test looks like next month's queue, including teams that grew after the training data was collected. The confidence threshold is picked on a validation slice (the newest 149 training issues) and only then applied to the test set, the way a pilot has to pick it before next month's tickets arrive.</p>
-<p>These are GitHub issues, not PostHog's private support tickets, so the numbers show the method rather than PostHog's real routing accuracy. A pilot reruns the same script on the customer's own closed tickets.</p></section><section><h2>Cost assumptions</h2><div class="tw"><table>
-<thead>
-<tr>
-<th>Input</th>
-<th style="text-align: right;">Value</th>
-<th>Source</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Manual triage per ticket</td>
-<td style="text-align: right;">2 minutes</td>
-<td>Assumption; timed on the customer's own queue in week 1 of a pilot</td>
-</tr>
-<tr>
-<td>Cost of one misroute</td>
-<td style="text-align: right;">10 minutes</td>
-<td>Assumption (wrong team reads it, moves it, re-queues it); measured from transfer logs in week 1</td>
-</tr>
-<tr>
-<td>Triage wage</td>
-<td style="text-align: right;">$29.74/hr</td>
-<td>BLS 2025 median for Computer User Support Specialists (O*NET 15-1232.00). Conservative for engineer-led support</td>
-</tr>
-<tr>
-<td>Model input price</td>
-<td style="text-align: right;">$0.042 per million tokens</td>
-<td>TypeSafe's published Jev input price; output not metered</td>
-</tr>
-<tr>
-<td>Accuracy bar</td>
-<td style="text-align: right;">95%</td>
-<td>Assumption; set with the support lead at kickoff</td>
-</tr>
-</tbody>
-</table></div></section>
-<section id="run"><h2>Run it yourself</h2><pre><code>pip install scikit-learn numpy matplotlib
+<div class="head">
+<h1>Ticket Routing Threshold Eval</h1>
+<p class="lead">One decision: which product team should own an incoming support ticket, and how sure the model has to be before it routes the ticket without a person looking at it. It takes a model's answers in the shape of a System One choice answer, as documented in OpenRouter's System One API reference (a choice, a confidence, and the probability of every option), then shows, at each confidence threshold, how many tickets would be routed automatically, how accurate those routes are, and what 1,000 tickets cost in triage time, misroutes and model spend.</p>
+</div>
+
+<section class="verdict" aria-labelledby="verdict-h">
+  <div class="vhead"><h2 id="verdict-h">Same 319 newer tickets, four ways to route them</h2><p>Bar: <b>95%</b> accuracy on the tickets routed automatically</p></div>
+  <div class="vrow" data-t="0.0" tabindex="0" role="button" aria-label="Show threshold 0.00 on the chart">
+  <div class="vwho"><b>Route everything</b><span>No threshold: every ticket goes to the model's pick</span></div>
+  <div class="strip" role="img" aria-label="Route everything: of every 1,000 tickets, about 750 routed correctly, 250 misrouted, 0 sent to a person"><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i></div>
+  <div class="vscore"><b>74.9<small>%</small></b><span>239 of 319 right<br>100% routed</span></div>
+  <div class="vcost"><b>$1,243</b><span>per 1,000</span></div>
+  <span class="gate nogo">MISSES BAR</span>
+</div><div class="vrow" data-t="0.7" tabindex="0" role="button" aria-label="Show threshold 0.70 on the chart">
+  <div class="vwho"><b>0.70, picked on older tickets</b><span>Chosen on the validation slice, then applied to newer tickets</span></div>
+  <div class="strip" role="img" aria-label="0.70, picked on older tickets: of every 1,000 tickets, about 500 routed correctly, 40 misrouted, 460 sent to a person"><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell crit"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i></div>
+  <div class="vscore"><b>93.1<small>%</small></b><span>161 of 173 right<br>54% routed</span></div>
+  <div class="vcost"><b>$640</b><span>per 1,000</span></div>
+  <span class="gate nogo">MISSES BAR</span>
+</div><div class="vrow" data-t="0.85" tabindex="0" role="button" aria-label="Show threshold 0.85 on the chart">
+  <div class="vwho"><b>0.85, best in hindsight</b><span>Lowest threshold that clears 95% on the test tickets</span></div>
+  <div class="strip" role="img" aria-label="0.85, best in hindsight: of every 1,000 tickets, about 340 routed correctly, 10 misrouted, 650 sent to a person"><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell pass"></i><i class="cell crit"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i></div>
+  <div class="vscore"><b>97.3<small>%</small></b><span>108 of 111 right<br>35% routed</span></div>
+  <div class="vcost"><b>$693</b><span>per 1,000</span></div>
+  <span class="gate go">CLEARS BAR</span>
+</div><div class="vrow">
+  <div class="vwho"><b>All by hand</b><span>Every ticket triaged by a person</span></div>
+  <div class="strip" role="img" aria-label="All by hand: of every 1,000 tickets, about 0 routed correctly, 0 misrouted, 1000 sent to a person"><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i><i class="cell fail"></i></div>
+  <div class="vscore"><b>n/a</b><span>0% routed</span></div>
+  <div class="vcost"><b>$991</b><span>per 1,000</span></div>
+  <span class="gate base">BASELINE</span>
+</div>
+  <div class="legend"><span><i class="pass"></i>Routed to the right team</span><span><i class="crit"></i>Misrouted</span><span><i class="fail"></i>Sent to a person</span><span>Each square is 10 of every 1,000 tickets. Select a row to see it on the curve.</span></div>
+</section>
+
+<section class="curve" id="curve" aria-labelledby="curve-h">
+  <div class="chead"><h2 id="curve-h">Pick a confidence threshold</h2>
+  <div class="seg" role="radiogroup" aria-label="Confidence threshold"><button type="button" role="radio" aria-checked="false" data-t="0.0">0.00</button><button type="button" role="radio" aria-checked="false" data-t="0.3">0.30</button><button type="button" role="radio" aria-checked="false" data-t="0.4">0.40</button><button type="button" role="radio" aria-checked="false" data-t="0.5">0.50</button><button type="button" role="radio" aria-checked="false" data-t="0.6">0.60</button><button type="button" role="radio" aria-checked="false" data-t="0.7">0.70</button><button type="button" role="radio" aria-checked="false" data-t="0.8">0.80</button><button type="button" role="radio" aria-checked="false" data-t="0.85">0.85</button><button type="button" role="radio" aria-checked="false" data-t="0.9">0.90</button><button type="button" role="radio" aria-checked="false" data-t="0.95">0.95</button></div></div>
+  <div class="cbody">
+    <div class="chart" id="chart"></div>
+    <div class="readout" aria-live="polite">
+      <div class="rtop"><span class="rthr" id="rThr"></span><span class="gate" id="rGate"></span></div>
+      <div class="rgrid">
+        <div><b id="rShare"></b><span>routed automatically</span></div>
+        <div><b id="rAcc"></b><span id="rAccN"></span></div>
+        <div><b id="rCost"></b><span>cost per 1,000 tickets</span></div>
+        <div><b id="rSave"></b><span>saving vs all by hand</span></div>
+      </div>
+      <div id="rStrip"></div>
+      <p class="rnote" id="rNote"></p>
+    </div>
+  </div>
+  <div class="clegend"><span><i class="ln ink"></i>Routed automatically</span><span><i class="ln green"></i>Accuracy on those</span><span><i class="ln dash"></i>Cost per 1,000 tickets (right axis)</span></div>
+</section>
+
+<div class="layout">
+<div class="content">
+
+<h2 id="findings">What the baseline shows</h2>
+<p class="note">The baseline is a cheap bag-of-words classifier with isotonic calibration. It is a floor to beat, not a proposal.</p>
+<ol class="finds">
+<li><b>Routing everything is worse than routing nothing.</b> With these cost assumptions, a model that is right 75% of the time costs $1,243 per 1,000 tickets against $991 by hand. Break-even for routing everything is about 80% accuracy, because a misroute costs five times a manual triage.</li>
+<li><b>A threshold picked once does not hold.</b> The threshold picked on older issues (0.70) misses a 95% bar on newer ones (93.1%, bootstrap 95% range 89% to 97%), while 0.85 would have cleared it. The validation pick cleared 95% by one ticket (82 of 86), and overall accuracy fell from 85% on the validation slice to 75% on the test set as the team mix shifted. Part of the gap is noise and part is drift; both are why a pilot re-checks the threshold every week on the latest routes.</li>
+<li><b>Confidence has to mean something.</b> The calibration table below checks that tickets the model is 90% sure of are right about 90% of the time. The baseline's expected calibration error is 0.061.</li>
+</ol>
+<div class="caveat"><h3>Caveats</h3><p>The test set is 319 issues, so every number has a wide range. 68 of the 108 correct routes at 0.85 are feature-flags issues, and the baseline is weaker outside that team. Isotonic calibration fitted on 743 issues is fragile (sigmoid calibration gives a very different curve), which is one more reason to prefer a model whose confidence is calibrated by design and to check it on the customer's own tickets.</p></div>
+
+<h2 id="sweep">Every threshold</h2>
+<p class="note">Train: 743 older tickets. Test: 319 tickets from 2026-07-01 to 2026-11-17, 10 teams. Routing every ticket by hand costs $991 per 1,000 tickets (2.0 min each at $29.74/hr). Model cost at $0.042 per million input tokens: $0.014 per 1,000 tickets. Each misroute is charged 10.0 minutes (the wrong team reads it, then it is moved and re-queued). Select a row to see it on the curve.</p>
+<div class="scroll"><table id="sweepTable"><thead><tr><th class="num">Threshold</th><th class="num">Routed automatically</th><th class="num">Accuracy on those</th><th class="num">Misroutes per 1,000</th><th class="num">Sent to a person per 1,000</th><th class="num">Cost per 1,000</th><th class="num">Saving vs all manual</th></tr></thead><tbody><tr data-t="0.0"><td class="num">0.00</td><td class="num">100%</td><td class="num">74.9% (239 of 319)</td><td class="num">251</td><td class="num">0</td><td class="num">$1,243</td><td class="num">-$252</td></tr><tr data-t="0.3"><td class="num">0.30</td><td class="num">98%</td><td class="num">76.0% (237 of 312)</td><td class="num">235</td><td class="num">22</td><td class="num">$1,187</td><td class="num">-$196</td></tr><tr data-t="0.4"><td class="num">0.40</td><td class="num">91%</td><td class="num">78.3% (227 of 290)</td><td class="num">197</td><td class="num">91</td><td class="num">$1,069</td><td class="num">-$78</td></tr><tr data-t="0.5"><td class="num">0.50</td><td class="num">79%</td><td class="num">85.3% (214 of 251)</td><td class="num">116</td><td class="num">213</td><td class="num">$786</td><td class="num">$205</td></tr><tr data-t="0.6"><td class="num">0.60</td><td class="num">66%</td><td class="num">91.0% (191 of 210)</td><td class="num">60</td><td class="num">342</td><td class="num">$634</td><td class="num">$357</td></tr><tr data-t="0.7"><td class="num">0.70</td><td class="num">54%</td><td class="num">93.1% (161 of 173)</td><td class="num">38</td><td class="num">458</td><td class="num">$640</td><td class="num">$351</td></tr><tr data-t="0.8"><td class="num">0.80</td><td class="num">42%</td><td class="num">94.0% (125 of 133)</td><td class="num">25</td><td class="num">583</td><td class="num">$702</td><td class="num">$289</td></tr><tr data-t="0.85"><td class="num">0.85</td><td class="num">35%</td><td class="num">97.3% (108 of 111)</td><td class="num">9</td><td class="num">652</td><td class="num">$693</td><td class="num">$298</td></tr><tr data-t="0.9"><td class="num">0.90</td><td class="num">24%</td><td class="num">98.7% (75 of 76)</td><td class="num">3</td><td class="num">762</td><td class="num">$771</td><td class="num">$221</td></tr><tr data-t="0.95"><td class="num">0.95</td><td class="num">5%</td><td class="num">100.0% (15 of 15)</td><td class="num">0</td><td class="num">953</td><td class="num">$945</td><td class="num">$47</td></tr></tbody></table></div>
+<p class="note"><b>Threshold picked on the validation slice (149 older tickets): 0.70.</b> On the test tickets it routes 54% automatically at 93.1% accuracy (161 of 173), which misses the 95% bar (bootstrap 95% range 89% to 97%), and saves $351 per 1,000 tickets. In hindsight, the lowest threshold that clears the bar on the test tickets is 0.85 (35% routed at 97.3%, 108 of 111). The validation pick cleared the bar by a small margin on few tickets, and the team mix also shifted between older and newer tickets, so a threshold chosen once is not enough evidence; a pilot re-checks it every week on a few hundred routes.</p>
+
+<h2 id="calibration">Does confidence track accuracy?</h2>
+<p class="note">Expected calibration error: 0.061 (0 means confidence equals accuracy in every bucket).</p>
+<div class="scroll"><table><thead><tr><th>Confidence bucket</th><th class="num">Tickets</th><th class="num">Mean confidence</th><th class="num">Actual accuracy</th></tr></thead><tbody><tr><td>0.00 to 0.50</td><td class="num">68</td><td class="num">0.40</td><td class="num">37%</td></tr><tr><td>0.50 to 0.70</td><td class="num">78</td><td class="num">0.60</td><td class="num">68%</td></tr><tr><td>0.70 to 0.80</td><td class="num">40</td><td class="num">0.76</td><td class="num">90%</td></tr><tr><td>0.80 to 0.90</td><td class="num">57</td><td class="num">0.85</td><td class="num">88%</td></tr><tr><td>0.90 to 0.95</td><td class="num">61</td><td class="num">0.93</td><td class="num">98%</td></tr><tr><td>0.95 to 1.00</td><td class="num">15</td><td class="num">0.96</td><td class="num">100%</td></tr></tbody></table></div>
+
+<h2 id="drift">By month (drift check)</h2>
+<div class="scroll"><table><thead><tr><th>Month</th><th class="num">Tickets</th><th class="num">Accuracy, all</th><th class="num">Routed automatically</th><th class="num">Accuracy, routed</th></tr></thead><tbody><tr><td>2026-07</td><td class="num">33</td><td class="num">70%</td><td class="num">19</td><td class="num">100%</td></tr><tr><td>2026-08</td><td class="num">96</td><td class="num">81%</td><td class="num">40</td><td class="num">98%</td></tr><tr><td>2026-09</td><td class="num">80</td><td class="num">74%</td><td class="num">49</td><td class="num">84%</td></tr><tr><td>2026-10</td><td class="num">74</td><td class="num">72%</td><td class="num">45</td><td class="num">96%</td></tr><tr><td>2026-11</td><td class="num">36</td><td class="num">72%</td><td class="num">20</td><td class="num">95%</td></tr></tbody></table></div>
+
+<h2 id="data">Data</h2>
+<p class="prose">1,062 public GitHub issues from PostHog's main repository that carry exactly one <code>team/*</code> label, across 10 teams (product analytics, feature flags, experiments, data warehouse, web analytics, LLM analytics, session replay, error tracking, conversations, CDP). Each issue stands in for a support ticket, and its team label is the ground-truth owner. Title prefixes that name the product outright ("Feature flags: ...") are removed, along with links and images. GitHub search returns at most the 200 newest issues per team label, so large teams are capped and the team mix shifts between older and newer issues; treat the mix as a sample, not PostHog's real ticket volume.</p>
+<p class="prose">The split is by date. The oldest 70% (743 issues, through June 2026) train the baseline, and the newest 30% (319 issues, July 1 to November 17, 2026) are the test set, so the test looks like next month's queue, including teams that grew after the training data was collected. The confidence threshold is picked on a validation slice (the newest 149 training issues) and only then applied to the test set, the way a pilot has to pick it before next month's tickets arrive.</p>
+<p class="prose">These are GitHub issues, not PostHog's private support tickets, so the numbers show the method rather than PostHog's real routing accuracy. A pilot reruns the same script on the customer's own closed tickets.</p>
+
+<h2 id="costs">Cost assumptions</h2>
+<div class="scroll"><table><thead><tr><th>Input</th><th class="num">Value</th><th>Source</th></tr></thead><tbody>
+<tr><td>Manual triage per ticket</td><td class="num">2 minutes</td><td>Assumption; timed on the customer's own queue in week 1 of a pilot</td></tr>
+<tr><td>Cost of one misroute</td><td class="num">10 minutes</td><td>Assumption (wrong team reads it, moves it, re-queues it); measured from transfer logs in week 1</td></tr>
+<tr><td>Triage wage</td><td class="num">$29.74/hr</td><td>BLS 2025 median for Computer User Support Specialists (O*NET 15-1232.00). Conservative for engineer-led support</td></tr>
+<tr><td>Model input price</td><td class="num">$0.042 per million tokens</td><td>TypeSafe's published Jev input price; output not metered</td></tr>
+<tr><td>Accuracy bar</td><td class="num">95%</td><td>Assumption; set with the support lead at kickoff</td></tr>
+</tbody></table></div>
+
+<h2 id="run">Score a candidate model</h2>
+<pre><code>pip install scikit-learn numpy matplotlib
 python fetch_tickets.py        # optional: re-pull issues with the GitHub CLI
 python run_eval.py             # baseline router -&gt; reports/report.md, results.json, threshold_chart.png
 python export_test_set.py      # validation and test tickets as System One request bodies
 python run_eval.py --val-answers val_answers.jsonl --answers test_answers.jsonl --out reports_jev
 python run_eval.py --confidence top   # threshold on the top probability instead of the confidence field
 </code></pre>
-<p>An answers file has one line per ticket:
-<code>{"id": 41234, "answer": {"type": "choice", "choice": "feature-flags", "confidence": 0.75, "probabilities": {"feature-flags": 0.84, ...}}}</code>
-Jev's <code>confidence</code> is reported separately from its top probability, so the harness thresholds on <code>confidence</code> by default and can sweep the top probability too. A <code>{"type": "refusal"}</code> answer, or an answer with neither a confidence nor probabilities, is always sent to a person.</p><p>Code: <a href="https://github.com/pg2342-hub/ticket-routing-eval">https://github.com/pg2342-hub/ticket-routing-eval</a></p></section>
-<footer>Source and full README at <a href="https://github.com/pg2342-hub/ticket-routing-eval">https://github.com/pg2342-hub/ticket-routing-eval</a>.</footer>
-</main><!-- demo-chrome --><footer class="demo-foot"><span>A working build by <a href="https://pranavgudise.dev/">Pranav Gudise</a>. Synthetic or public data only.</span><a href="https://github.com/pg2342-hub/ticket-routing-eval">github.com/pg2342-hub/ticket-routing-eval</a></footer><!-- /demo-chrome -->
+<p class="prose">The harness takes answers in the shape of a System One choice answer (OpenRouter's System One API reference): a choice, a confidence, and the probability of every option. An answers file has one line per ticket:</p>
+<pre><code>{"id": 41234, "answer": {"type": "choice", "choice": "feature-flags", "confidence": 0.75, "probabilities": {"feature-flags": 0.84, ...}}}</code></pre>
+<p class="prose">Jev's <code>confidence</code> is reported separately from its top probability, so the harness thresholds on <code>confidence</code> by default and can sweep the top probability too. A <code>{"type": "refusal"}</code> answer, or an answer with neither a confidence nor probabilities, is always sent to a person.</p>
+</div>
+
+<aside class="side" aria-label="About this build">
+  <nav aria-label="On this page"><a href="#curve">Threshold curve</a><a href="#findings">What the baseline shows</a><a href="#sweep">Every threshold</a><a href="#calibration">Calibration</a><a href="#drift">Drift by month</a><a href="#data">Data</a><a href="#costs">Cost assumptions</a><a href="#run">Score a candidate model</a></nav>
+  <div><h3>Data</h3><p>1,062 public PostHog GitHub issues stand in for support tickets, so the numbers show the method, not PostHog's real routing accuracy. Everything on this page is the committed output of the code.</p></div>
+  <div><h3>Run it yourself</h3><p>Python 3 with scikit-learn, numpy and matplotlib.</p><pre>pip install scikit-learn numpy matplotlib
+python run_eval.py</pre></div>
+  <div><a class="pill" href="https://github.com/pg2342-hub/ticket-routing-eval">Code on GitHub</a></div>
+</aside>
+</div>
+</main>
+<script>
+const D = {"sweep":[{"threshold":0.0,"n_auto":319,"n_auto_correct":239,"auto_share":1.0,"auto_accuracy":0.7492,"misroutes_per_1k":250.7837,"deferred_per_1k":0.0,"cost_per_1k":1243.0653,"saving_vs_manual_per_1k":-251.732},{"threshold":0.3,"n_auto":312,"n_auto_correct":237,"auto_share":0.9781,"auto_accuracy":0.7596,"misroutes_per_1k":235.1097,"deferred_per_1k":21.9436,"cost_per_1k":1187.128,"saving_vs_manual_per_1k":-195.7947},{"threshold":0.4,"n_auto":290,"n_auto_correct":227,"auto_share":0.9091,"auto_accuracy":0.7828,"misroutes_per_1k":197.4922,"deferred_per_1k":90.9091,"cost_per_1k":1069.0381,"saving_vs_manual_per_1k":-77.7048},{"threshold":0.5,"n_auto":251,"n_auto_correct":214,"auto_share":0.7868,"auto_accuracy":0.8526,"misroutes_per_1k":115.9875,"deferred_per_1k":213.1661,"cost_per_1k":786.244,"saving_vs_manual_per_1k":205.0894},{"threshold":0.6,"n_auto":210,"n_auto_correct":191,"auto_share":0.6583,"auto_accuracy":0.9095,"misroutes_per_1k":59.5611,"deferred_per_1k":341.6928,"cost_per_1k":633.9702,"saving_vs_manual_per_1k":357.3631},{"threshold":0.7,"n_auto":173,"n_auto_correct":161,"auto_share":0.5423,"auto_accuracy":0.9306,"misroutes_per_1k":37.6176,"deferred_per_1k":457.6803,"cost_per_1k":640.1855,"saving_vs_manual_per_1k":351.1479},{"threshold":0.8,"n_auto":133,"n_auto_correct":125,"auto_share":0.4169,"auto_accuracy":0.9398,"misroutes_per_1k":25.0784,"deferred_per_1k":583.0721,"cost_per_1k":702.338,"saving_vs_manual_per_1k":288.9953},{"threshold":0.85,"n_auto":111,"n_auto_correct":108,"auto_share":0.348,"auto_accuracy":0.973,"misroutes_per_1k":9.4044,"deferred_per_1k":652.0376,"cost_per_1k":693.0151,"saving_vs_manual_per_1k":298.3182},{"threshold":0.9,"n_auto":76,"n_auto_correct":75,"auto_share":0.2382,"auto_accuracy":0.9868,"misroutes_per_1k":3.1348,"deferred_per_1k":761.7555,"cost_per_1k":770.7058,"saving_vs_manual_per_1k":220.6275},{"threshold":0.95,"n_auto":15,"n_auto_correct":15,"auto_share":0.047,"auto_accuracy":1.0,"misroutes_per_1k":0.0,"deferred_per_1k":952.9781,"cost_per_1k":944.733,"saving_vs_manual_per_1k":46.6003}],"manual":991.33,"target":0.95,"pick":0.7,"hindsight":0.85};
+// Threshold curve: share routed, accuracy on those, and cost per 1,000 tickets, drawn to scale.
+const S = D.sweep, NS = "http://www.w3.org/2000/svg";
+const money = x => (x < 0 ? "-$" : "$") + Math.round(Math.abs(x)).toLocaleString("en-US");
+const fmtT = t => t.toFixed(2);
+let cur = D.pick;
+
+function squares(s, n) {
+  const parts = [s.auto_share * s.auto_accuracy * n, s.auto_share * (1 - s.auto_accuracy) * n, (1 - s.auto_share) * n];
+  const fl = parts.map(Math.floor);
+  const order = [0, 1, 2].sort((a, b) => (parts[b] - fl[b]) - (parts[a] - fl[a]));
+  for (let i = 0; i < n - fl.reduce((a, b) => a + b, 0); i++) fl[order[i]]++;
+  return fl;
+}
+
+function draw() {
+  const box = document.getElementById("chart");
+  const W = Math.max(300, box.clientWidth - 16), narrow = W < 560;
+  const H = narrow ? 280 : 340, L = narrow ? 40 : 48, R = narrow ? 50 : 60, T = 14, B = 40;
+  const pw = W - L - R, ph = H - T - B, c0 = 600, c1 = 1300;
+  const X = v => L + v * pw, Y = p => T + ph - p / 100 * ph, YC = c => T + ph - (c - c0) / (c1 - c0) * ph;
+  const fs = narrow ? 11 : 12;
+  let g = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Share routed automatically, accuracy on those, and cost per 1,000 tickets by confidence threshold" font-size="${fs}" fill="#57544c">`;
+  for (let p = 0; p <= 100; p += 20) g += `<line x1="${L}" x2="${L + pw}" y1="${Y(p)}" y2="${Y(p)}" stroke="rgb(27 26 23/.08)"/><text x="${L - 8}" y="${Y(p) + 4}" text-anchor="end">${p}%</text>`;
+  for (let c = c0; c <= c1; c += 200) g += `<text x="${L + pw + 8}" y="${YC(c) + 4}">$${c.toLocaleString("en-US")}</text>`;
+  for (const t of [0, .2, .4, .6, .8, 1]) g += `<text x="${X(t)}" y="${T + ph + 18}" text-anchor="middle">${t.toFixed(1)}</text>`;
+  g += `<text x="${L + pw / 2}" y="${H - 4}" text-anchor="middle">Confidence threshold</text>`;
+  g += `<line x1="${L}" x2="${L + pw}" y1="${T + ph}" y2="${T + ph}" stroke="#1b1a17"/>`;
+  const ty = Y(D.target * 100);
+  g += `<line x1="${L}" x2="${L + pw}" y1="${ty}" y2="${ty}" stroke="#24513c" stroke-dasharray="2 4"/>`;
+  g += `<text x="${L + pw + 8}" y="${ty + 4}" fill="#24513c">${Math.round(D.target * 100)}% bar</text>`;
+  // the selected threshold
+  const s = S.find(x => x.threshold === cur);
+  g += `<line x1="${X(cur)}" x2="${X(cur)}" y1="${T}" y2="${T + ph}" stroke="#1b1a17" stroke-width="1" stroke-dasharray="3 3"/>`;
+  const line = (pts, color, dash, w) => `<polyline points="${pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ")}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linejoin="round"${dash ? ` stroke-dasharray="${dash}"` : ""}/>` +
+    pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${S[p[2]].threshold === cur ? 5 : 3}" fill="${color}"${S[p[2]].threshold === cur ? ' stroke="#fbfaf6" stroke-width="2"' : ""}/>`).join("");
+  const share = S.map((x, i) => [X(x.threshold), Y(x.auto_share * 100), i]);
+  const acc = S.map((x, i) => [X(x.threshold), Y(x.auto_accuracy * 100), i]).filter((p, i) => S[i].auto_share > 0);
+  const cost = S.map((x, i) => [X(x.threshold), YC(x.cost_per_1k), i]);
+  g += line(cost, "#57544c", "5 4", 1.5) + line(share, "#1b1a17", "", 2) + line(acc, "#24513c", "", 2);
+  // value tags at the selected threshold, kept inside the plot
+  const tag = (y, text, color) => {
+    const w = text.length * (fs * .62) + 10, right = X(cur) + 8 + w <= L + pw;
+    const x = right ? X(cur) + 8 : X(cur) - 8 - w;
+    return `<rect x="${x}" y="${y - 9}" width="${w}" height="18" rx="4" fill="#fbfaf6" stroke="${color}" stroke-width=".75"/><text x="${x + 5}" y="${y + 4}" fill="${color}">${text}</text>`;
+  };
+  const tags = [[Y(s.auto_accuracy * 100), (s.auto_accuracy * 100).toFixed(1) + "%", "#24513c"],
+                [Y(s.auto_share * 100), Math.round(s.auto_share * 100) + "% routed", "#1b1a17"],
+                [YC(s.cost_per_1k), money(s.cost_per_1k), "#57544c"]].sort((a, b) => a[0] - b[0]);
+  for (let i = 1; i < tags.length; i++) if (tags[i][0] - tags[i - 1][0] < 22) tags[i][0] = tags[i - 1][0] + 22;
+  for (const t of tags) { t[0] = Math.min(t[0], T + ph - 10); }
+  for (let i = tags.length - 2; i >= 0; i--) if (tags[i + 1][0] - tags[i][0] < 22) tags[i][0] = tags[i + 1][0] - 22;
+  g += tags.map(t => tag(...t)).join("");
+  // click targets per threshold
+  g += S.map((x, i) => { const a = i ? (X(S[i - 1].threshold) + X(x.threshold)) / 2 : L, b = i < S.length - 1 ? (X(x.threshold) + X(S[i + 1].threshold)) / 2 : L + pw;
+    return `<rect class="hit" data-t="${x.threshold}" x="${a}" y="${T}" width="${b - a}" height="${ph}" fill="transparent"><title>Threshold ${fmtT(x.threshold)}</title></rect>`; }).join("");
+  box.innerHTML = g + "</svg>";
+  box.querySelectorAll(".hit").forEach(h => h.addEventListener("click", () => pick(+h.dataset.t)));
+}
+
+function pick(t) {
+  cur = t;
+  const s = S.find(x => x.threshold === t);
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-checked", String(+b.dataset.t === t)));
+  document.querySelectorAll("#sweepTable tbody tr").forEach(r => r.classList.toggle("on", +r.dataset.t === t));
+  document.querySelectorAll(".vrow[data-t]").forEach(r => r.classList.toggle("on", +r.dataset.t === t));
+  document.getElementById("rThr").textContent = "Threshold " + fmtT(t);
+  const ok = s.auto_accuracy >= D.target, gate = document.getElementById("rGate");
+  gate.className = "gate " + (ok ? "go" : "nogo");
+  gate.textContent = ok ? "CLEARS 95%" : "MISSES 95%";
+  document.getElementById("rShare").textContent = Math.round(s.auto_share * 100) + "%";
+  document.getElementById("rAcc").textContent = (s.auto_accuracy * 100).toFixed(1) + "%";
+  document.getElementById("rAccN").textContent = `accuracy on those, ${s.n_auto_correct} of ${s.n_auto}`;
+  document.getElementById("rCost").textContent = money(s.cost_per_1k);
+  document.getElementById("rSave").textContent = money(s.saving_vs_manual_per_1k);
+  const q = squares(s, 100);
+  document.getElementById("rStrip").innerHTML = `<div class="strip" role="img" aria-label="Of every 1,000 tickets: about ${q[0] * 10} routed correctly, ${q[1] * 10} misrouted, ${q[2] * 10} sent to a person">` +
+    ["pass", "crit", "fail"].map((c, i) => `<i class="cell ${c}"></i>`.repeat(q[i])).join("") + "</div>";
+  const notes = [`Per 1,000 tickets: ${Math.round(s.misroutes_per_1k)} misroutes and ${Math.round(s.deferred_per_1k)} sent to a person.`];
+  if (t === D.pick) notes.push("Picked on the validation slice (149 older tickets), where it cleared 95% by one ticket.");
+  if (t === D.hindsight) notes.push("Lowest threshold that clears 95% on the test tickets, known only in hindsight.");
+  if (s.saving_vs_manual_per_1k < 0) notes.push(`Costs more than routing every ticket by hand (${money(D.manual)}).`);
+  document.getElementById("rNote").textContent = notes.join(" ");
+  draw();
+}
+
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => pick(+b.dataset.t)));
+document.querySelectorAll("#sweepTable tbody tr").forEach(r => r.addEventListener("click", () => pick(+r.dataset.t)));
+document.querySelectorAll(".vrow[data-t]").forEach(r => {
+  const go = () => { pick(+r.dataset.t); document.getElementById("curve").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"}); };
+  r.addEventListener("click", go);
+  r.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+});
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(draw, 100); });
+pick(cur);
+</script>
+<!-- demo-chrome --><footer class="demo-foot"><span>A working build by <a href="https://pranavgudise.dev/">Pranav Gudise</a>. Synthetic or public data only.</span><a href="https://github.com/pg2342-hub/ticket-routing-eval">github.com/pg2342-hub/ticket-routing-eval</a></footer><!-- /demo-chrome -->
 </body></html>
